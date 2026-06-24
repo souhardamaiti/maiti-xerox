@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo King Pro - Ultimate Fixed Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e272e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        h1 {
+            color: #f5cd79;
+            margin-bottom: 10px;
+            font-size: 26px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .setup-container {
+            background: #2f3640;
+            padding: 12px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 1px solid #4b5320;
+        }
+
+        select, button {
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #718093;
+            cursor: pointer;
+            font-weight: bold;
+            background: #718093;
+            color: white;
+        }
+
+        button {
+            background-color: #e1b12c;
+            color: #1e272e;
+            border: none;
+        }
+
+        /* ১৫x১৫ নিখুঁত গ্রিড বোর্ড */
+        .ludo-board {
+            width: 450px;
+            height: 450px;
+            border: 6px solid #000;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            background-color: #fff;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        .cell {
+            border: 1px solid #cbd5e1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* ৪ কোণার মূল হোম জোন */
+        .red-home { background-color: #ff4d4d !important; }
+        .green-home { background-color: #2ecc71 !important; }
+        .yellow-home { background-color: #f1c40f !important; }
+        .blue-home { background-color: #3498db !important; }
+        .center-home { background: radial-gradient(circle, #f5cd79 20%, #2f3542 80%); border: 2px solid #000; }
+
+        /* ট্র্যাকিং পাথ বা রাস্তার কালার */
+        .red-path { background-color: #ff9f9f !important; }
+        .green-path { background-color: #9eff9e !important; }
+        .yellow-path { background-color: #fff69f !important; }
+        .blue-path { background-color: #9fd1ff !important; }
+        
+        /* সেফ জোন বা স্টার ঘরের ডিজাইন */
+        .safe-zone { background-color: #a4b0be !important; }
+        .safe-zone::after { content: '⭐'; font-size: 12px; position: absolute; opacity: 0.8; color: #000; }
+
+        /* ঘুঁটি বসার স্টাইলিশ বৃত্ত */
+        .home-circle {
+            width: 24px;
+            height: 24px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 2px dashed #000;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        /* ঘুঁটি (Tokens) স্টাইলিং */
+        .token {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            z-index: 999 !important;
+            cursor: pointer;
+            position: absolute;
+            transition: all 0.1s linear;
+        }
+        
+        .red-token { background-color: #ff0000; }
+        .green-token { background-color: #00be00; }
+        .yellow-token { background-color: #ffcc00; }
+        .blue-token { background-color: #0066ff; }
+
+        /* চাল দেওয়ার সময় ঘুঁটি কাঁপানোর অ্যানিমেশন */
+        .movable {
+            animation: gutiBounce 0.3s infinite alternate;
+            box-shadow: 0 0 12px #fff, 0 0 4px #000;
+        }
+
+        @keyframes gutiBounce {
+            from { transform: scale(1); }
+            to { transform: scale(1.3); }
+        }
+
+        /* কন্ট্রোল প্যানেল ও ছক্কা */
+        .controls {
+            margin-top: 15px;
+            text-align: center;
+            background: #2f3640;
+            padding: 15px;
+            border-radius: 10px;
+            width: 450px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid #4b5320;
+        }
+
+        .status { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #f5cd79; }
+        
+        .dice {
+            width: 55px; height: 55px; background: white;
+            border: 3px solid #000; border-radius: 12px;
+            font-size: 26px; display: inline-flex;
+            justify-content: center; align-items: center;
+            cursor: pointer; font-weight: bold; color: #000;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.4);
+            user-select: none;
+        }
+
+        .dice-rolling { animation: roll 0.3s linear; }
+        @keyframes roll {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #instruction-msg { margin-top: 8px; font-size: 14px; color: #dcdde1; }
+
+        /* 🪷 Winner screen popup */
+        .winner-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            color: #fff;
+        }
+
+        .winner-card {
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            border: 5px solid #fff;
+            box-shadow: 0 15px 40px rgba(255, 126, 95, 0.6);
+        }
+
+        .lotus-flower {
+            font-size: 90px;
+            margin-bottom: 12px;
+            animation: floatLotus 1.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatLotus {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-12px); }
+        }
+
+        .victory-text {
+            font-size: 45px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 3px 5px 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ludo King Pro Edition 🎲</h1>
+
+    <div class="setup-container">
+        <label for="player-count"><b>প্লেয়ার মোড:</b> </label>
+        <select id="player-count" onchange="startGame()">
+            <option value="2">২ জন প্লেয়ার (লাল ও সবুজ)</option>
+            <option value="3">৩ জন প্লেয়ার (লাল, সবুজ ও হলুদ)</option>
+            <option value="4" selected>৪ জন প্লেয়ার (সবাই)</option>
+        </select>
+        <button onclick="startGame()">নতুন গেম 🔄</button>
+    </div>
+
+    <div class="ludo-board" id="board"></div>
+
+    <div class="controls">
+        <div class="status" id="status-text">টার্ন: <span style="color:#ff4d4d">Red Player</span></div>
+        <div class="dice" id="dice-btn" onclick="rollDice()">🎲</div>
+        <p id="instruction-msg">খেলা শুরু করতে ছক্কায় ক্লিক করুন!</p>
+    </div>
+
+    <div class="winner-overlay" id="winnerScreen">
+        <div class="winner-card">
+            <div class="lotus-flower">🪷</div>
+            <div style="font-size: 24px; font-weight: bold; margin-bottom: 10px;" id="winner-name-text">RED WINNER!!</div>
+            <div class="victory-text">জয় শ্রী রাম</div>
+            <button class="restart-btn" style="background:#fff; color:#ff7e5f; padding: 10px 25px; font-size: 16px; border-radius: 20px; border:none; font-weight:bold; cursor:pointer;" onclick="closeWinnerScreen()">আবার খেলুন 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const statusText = document.getElementById('status-text');
+        const diceBtn = document.getElementById('dice-btn');
+        const instructionMsg = document.getElementById('instruction-msg');
+        const winnerScreen = document.getElementById('winnerScreen');
+        const winnerNameText = document.getElementById('winner-name-text');
+        
+        let playerOrder = ['Red', 'Green', 'Yellow', 'Blue'];
+        let activePlayers = 4;
+        let currentPlayerIndex = 0;
+        let isDiceRolled = false;
+        let currentDiceValue = 1;
+
+        // গ্লোবাল মেইন রোড ট্র্যাক (৫২টি সাধারণ ঘর)
+        const commonTrack = [
+            [6,0],[6,1],[6,2],[6,3],[6,4],[5,5],[4,5],[3,5],[2,5],[1,5],[0,5],
+            [0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],
+            [6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],
+            [9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],[14,5],[13,5],
+            [12,5],[11,5],[10,5],[9,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0]
+        ];
+
+        // শুরুতে ইনার হোম ইয়ার্ডে বসার জন্য নির্দিষ্ট কোঅর্ডিনেট
+        const homeCoordinates = {
+            'Red': [[1,1], [1,4], [4,1], [4,4]],
+            'Green': [[1,10], [1,13], [4,10], [4,13]],
+            'Yellow': [[10,1], [10,4], [13,1], [13,4]],
+            'Blue': [[10,10], [10,13], [13,10], [13,13]]
+        };
+
+        const playerStartIndexes = { 'Red': 1, 'Green': 14, 'Yellow': 27, 'Blue': 40 };
+        
+        // প্রতিটি প্লেয়ারের জন্য নির্দিষ্ট বাঁক বা গেট (যেখানে এসে ঘুঁটি নিজের পাকা রাস্তায় ঢুকবে)
+        const playerPreHomeIndexes = { 'Red': 50, 'Green': 12, 'Yellow': 25, 'Blue': 38 };
+
+        // ভেতরের নিজস্ব হোম বা পাকা ট্র্যাকিং পথ
+        const homePaths = {
+            'Red': [[7,1], [7,2], [7,3], [7,4], [7,5]],
+            'Green': [[1,7], [2,7], [3,7], [4,7], [5,7]],
+            'Yellow': [[7,13], [7,12], [7,11], [7,10], [7,9]],
+            'Blue': [[13,7], [12,7], [11,7], [10,7], [9,7]]
+        };
+
+        const safeCells = ["6,1", "1,8", "8,13", "13,6", "8,2", "2,6", "6,12", "12,8"]; 
+
+        // পজিশন ট্র্যাকিং ডিকশনারি
+        let tokenPositions = {
+            'Red': [-1, -1, -1, -1], 'Green': [-1, -1, -1, -1],
+            'Yellow': [-1, -1, -1, -1], 'Blue': [-1, -1, -1, -1]
+        };
+        
+        let playerColors = { 'Red': '#ff4d4d', 'Green': '#2ecc71', 'Yellow': '#f1c40f', 'Blue': '#3498db' };
+
+        function startGame() {
+            activePlayers = parseInt(document.getElementById('player-count').value);
+            currentPlayerIndex = 0;
+            isDiceRolled = false;
+            tokenPositions = {
+                'Red': [-1, -1, -1, -1], 'Green': [-1, -1, -1, -1],
+                'Yellow': [-1, -1, -1, -1], 'Blue': [-1, -1, -1, -1]
+            };
+            diceBtn.textContent = '🎲';
+            instructionMsg.textContent = 'খেলা শুরু করতে ছক্কায় ক্লিক করুন!';
+            updateStatus();
+            createBoard();
+        }
+
+        function createBoard() {
+            board.innerHTML = '';
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 15; col++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.setAttribute('data-id', `${row},${col}`);
+
+                    // ব্যাকগ্রাউন্ড জোন ম্যাপিং (সাদা জোন এড়াতে)
+                    if (row < 6 && col < 6) cell.classList.add('red-home');
+                    else if (row < 6 && col > 8) cell.classList.add('green-home');
+                    else if (row > 8 && col < 6) cell.classList.add('yellow-home');
+                    else if (row > 8 && col > 8) cell.classList.add('blue-home');
+                    else if (row >= 6 && row <= 8 && col >= 6 && col <= 8) cell.classList.add('center-home');
+
+                    // ভেতরের ৪টি ঘরের বসার গোল বৃত্ত বসানো
+                    for (let p in homeCoordinates) {
+                        homeCoordinates[p].forEach((coord, idx) => {
+                            if (coord[0] === row && coord[1] === col) {
+                                cell.innerHTML = `<div class="home-circle" id="circle-${p}-${idx}"></div>`;
+                            }
+                        });
+                    }
+
+                    // পাকা বা উইনিং ট্র্যাকিং পথ ডিজাইন
+                    if (row == 7 && col > 0 && col < 6) cell.classList.add('red-path');
+                    if (col == 7 && row > 0 && row < 6) cell.classList.add('green-path');
+                    if (row == 7 && col > 8 && col < 14) cell.classList.add('yellow-path');
+                    if (col == 7 && row > 8 && row < 14) cell.classList.add('blue-path');
+
+                    if (safeCells.includes(`${row},${col}`)) cell.classList.add('safe-zone');
+
+                    board.appendChild(cell);
+                }
+            }
+            renderTokens();
+        }
+
+        function renderTokens() {
+            document.querySelectorAll('.token').forEach(t => t.remove());
+
+            for (let i = 0; i < activePlayers; i++) {
+                let p = playerOrder[i];
+                for (let tIdx = 0; tIdx < 4; tIdx++) {
+                    let pos = tokenPositions[p][tIdx];
+                    if (pos === 999) continue; 
+
+                    let token = document.createElement('div');
+                    token.className = `token ${p.toLowerCase()}-token`;
+                    token.setAttribute('data-player', p);
+                    token.setAttribute('data-token-idx', tIdx);
+                    token.onclick = onTokenClick;
+
+                    if (pos === -1) {
+                        let innerCircle = document.getElementById(`circle-${p}-${tIdx}`);
+                        if (innerCircle) innerCircle.appendChild(token);
+                    } else if (pos >= 100 && pos <= 104) {
+                        let coord = homePaths[p][pos - 100];
+                        let cell = document.querySelector(`[data-id='${coord[0]},${coord[1]}']`);
+                        if (cell) cell.appendChild(token);
+                    } else {
+                        let coord = commonTrack[pos];
+                        let cell = document.querySelector(`[data-id='${coord[0]},${coord[1]}']`);
+                        if (cell) cell.appendChild(token);
+                    }
+                }
+            }
+        }
+
+        function rollDice() {
+            if (isDiceRolled) return;
+            
+            diceBtn.classList.add('dice-rolling');
+            isDiceRolled = true;
+
+            setTimeout(() => {
+                currentDiceValue = Math.floor(Math.random() * 6) + 1;
+                diceBtn.textContent = currentDiceValue;
+                diceBtn.classList.remove('dice-rolling');
+                
+                let p = playerOrder[currentPlayerIndex];
+                let movableCount = markMovableTokens(p, currentDiceValue);
+
+                if (movableCount === 0) {
+                    instructionMsg.textContent = "কোনো চালের জায়গা নেই! টার্ন পরিবর্তন হচ্ছে...";
+                    setTimeout(moveToNextPlayer, 1000);
+                } else {
+                    instructionMsg.textContent = "কাঁপতে থাকা ঘুঁটি সিলেক্ট করে চালুন!";
+                }
+            }, 300);
+        }
+
+        function markMovableTokens(player, diceVal) {
+            let count = 0;
+            let tokens = document.querySelectorAll(`.token[data-player='${player}']`);
+            tokens.forEach(token => {
+                let tIdx = parseInt(token.getAttribute('data-token-idx'));
+                let pos = tokenPositions[player][tIdx];
+                
+                if (pos === -1 && diceVal === 6) {
+                    token.classList.add('movable');
+                    count++;
+                } else if (pos >= 0 && pos <= 51) {
+                    token.classList.add('movable');
+                    count++;
+                } else if (pos >= 100 && pos <= 104) {
+                    if ((pos - 100) + diceVal <= 5) {
+                        token.classList.add('movable');
+                        count++;
+                    }
+                }
+            });
+            return count;
+        }
+
+        function onTokenClick(e) {
+            let token = e.target;
+            if (!token.classList.contains('movable')) return;
+
+            let player = token.getAttribute('data-player');
+            let tIdx = parseInt(token.getAttribute('data-token-idx'));
+            let pos = tokenPositions[player][tIdx];
+            let hasBonusTurn = false;
+
+            document.querySelectorAll('.token').forEach(t => t.classList.remove('movable'));
+
+            if (pos === -1 && currentDiceValue === 6) {
+                tokenPositions[player][tIdx] = playerStartIndexes[player];
+                hasBonusTurn = true; 
+            } else if (pos >= 100 && pos <= 104) {
+                let innerIdx = (pos - 100) + currentDiceValue;
+                if (innerIdx === 5) {
+                    tokenPositions[player][tIdx] = 999; 
+                    alert(`🎉 ${player}-এর একটি ঘুঁটি পেকে গেছে!`);
+                    hasBonusTurn = true;
+                } else {
+                    tokenPositions[player][tIdx] = 100 + innerIdx;
+                }
+                if (currentDiceValue === 6) hasBonusTurn = true;
+            } else if (pos >= 0 && pos <= 51) {
+                let targetPos = pos;
+                let stepJumped = false;
+
+                // প্রতিটি কোঅর্ডিনেট চেক করা যাতে গেট মিস না হয়
+                for (let i = 0; i < currentDiceValue; i++) {
+                    if (targetPos === playerPreHomeIndexes[player]) {
+                        let remainingSteps = currentDiceValue - i - 1;
+                        if (remainingSteps === 5) {
+                            tokenPositions[player][tIdx] = 999;
+                            alert(`🎉 ${player}-এর একটি ঘুঁটি পেকে গেছে!`);
+                            hasBonusTurn = true;
+                        } else {
+                            tokenPositions[player][tIdx] = 100 + remainingSteps;
+                        }
+                        stepJumped = true;
+                        break;
+                    } else {
+                        targetPos = (targetPos + 1) % 52;
+                    }
+                }
+
+                if (!stepJumped) {
+                    tokenPositions[player][tIdx] = targetPos;
+                }
+
+                if (currentDiceValue === 6) hasBonusTurn = true;
+            }
+
+            renderTokens();
+
+            if (tokenPositions[player].every(pos => pos === 999)) {
+                winnerNameText.textContent = `🎉 ${player.toUpperCase()} PLAYER IS THE WINNER! 🎉`;
+                winnerScreen.style.display = 'flex';
+                return;
+            }
+
+            if (tokenPositions[player][tIdx] < 100 && checkKilling(player, tIdx)) hasBonusTurn = true;
+
+            if (hasBonusTurn) {
+                isDiceRolled = false;
+                instructionMsg.textContent = "🔥 ল্যাভীশ লুপ বোনাস চাল! আবার ডাইস রোল করুন।";
+            } else {
+                moveToNextPlayer();
+            }
+        }
+
+        function checkKilling(movingPlayer, movingTokenIdx) {
+            let movingPos = tokenPositions[movingPlayer][movingTokenIdx];
+            if (movingPos >= 100 || movingPos === 999 || movingPos === -1) return false;
+            let movingCoord = commonTrack[movingPos].join(',');
+            
+            if (safeCells.includes(movingCoord)) return false;
+
+            for (let p in tokenPositions) {
+                if (p !== movingPlayer) {
+                    for (let tIdx = 0; tIdx < 4; tIdx++) {
+                        let otherPos = tokenPositions[p][tIdx];
+                        if (otherPos >= 0 && otherPos <= 51) {
+                            if (commonTrack[otherPos].join(',') === movingCoord) {
+                                alert(`⚔️ Attack! ${movingPlayer} কেটে দিল ${p}-এর ঘুঁটিকে!`);
+                                tokenPositions[p][tIdx] = -1; 
+                                renderTokens();
+                                return true; 
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function moveToNextPlayer() {
+            currentPlayerIndex = (currentPlayerIndex + 1) % activePlayers;
+            isDiceRolled = false;
+            instructionMsg.textContent = "ছক্কায় প্রেস করে চালুন!";
+            updateStatus();
+        }
+
+        function updateStatus() {
+            let nextPlayer = playerOrder[currentPlayerIndex];
+            statusText.innerHTML = `টার্ন: <span style="color:${playerColors[nextPlayer]}">${nextPlayer} Player</span>`;
+        }
+
+        function closeWinnerScreen() {
+            winnerScreen.style.display = 'none';
+            startGame();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>s
